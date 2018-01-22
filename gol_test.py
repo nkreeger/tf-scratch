@@ -47,7 +47,7 @@ def main():
     with tf.Session() as sess:
       sess.run(tf.global_variables_initializer())
 
-      for i in range(5000000):
+      for i in range(1000000):
         world, world_next = calc_world(size)
 
         _, loss_value = sess.run([train, loss], feed_dict={
