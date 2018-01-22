@@ -1,0 +1,2 @@
+model_checkpoint_path: "/usr/local/google/home/kreeger/workspace/tf-scratch/gol-data/gol"
+all_model_checkpoint_paths: "/usr/local/google/home/kreeger/workspace/tf-scratch/gol-data/gol"
