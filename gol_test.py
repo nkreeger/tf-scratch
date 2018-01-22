@@ -1,32 +1,22 @@
+import numpy as np
 import tensorflow as tf
 import os
 
-def generate_gol_example(size):
-  if size < 3:
-    raise ValueError("Size must be greater than 2, received %d" % size)
+def calc_world_next(world, size):
+  world_next = np.zeros_like(world)
+  for i in range(1, size - 1):
+    for j in range(1, size - 1):
+      num_neighbors = np.sum(world[i-1:i+2, j-1:j+2]) - world[i, j]
+      if num_neighbors == 3:
+        world_next[i, j] = 1
+      elif num_neighbors == 2:
+        world_next[i, j] = world[i, j]
+  return world_next
 
-  with tf.name_scope("generate_gol_example"):
-    world = tf.random_uniform(
-        (size - 2, size - 2), minval=0, maxval=2, dtype=tf.int32)
-    world_padded = tf.pad(world, [[1, 1], [1, 1]])
-
-    num_neighbors = (
-        world_padded[:-2, :-2] + world_padded[:-2, 1:-1] + world_padded[:-2, 2:]
-        + world_padded[1:-1, :-2] + world_padded[1:-1, 2:] +
-        world_padded[2:, :-2] + world_padded[2:, 1:-1] + world_padded[2:, 2:])
-
-    cell_survives = tf.logical_or(
-        tf.equal(num_neighbors, 3), tf.equal(num_neighbors, 2))
-    cell_rebirths = tf.equal(num_neighbors, 3)
-
-    survivors = tf.where(cell_survives, world_padded[1:-1, 1:-1],
-                         tf.zeros_like(world))
-    world_next = tf.where(cell_rebirths, tf.ones_like(world), survivors)
-
-    world_next_padded = tf.pad(world_next, [[1, 1], [1, 1]])
-
-    return world_padded, world_next_padded
-
+def calc_world(size):
+  world = np.random.random_integers(0, 1, [size - 2, size -2])
+  world = np.lib.pad(world, (1, 1), 'constant')
+  return world, calc_world_next(world, size)
 
 def main():
   size = 5
@@ -54,32 +44,17 @@ def main():
 
     saver = tf.train.Saver()
 
-
     with tf.Session() as sess:
       sess.run(tf.global_variables_initializer())
 
-      print '... Generating samples'
-      sample_sets = []
-      samples = 1000
-      for i in range(samples):
-        if i % 10 == 0:
-          print '{0} samples'.format(i)
-        world, world_next = generate_gol_example(size)
-        sample_sets.append(tf.to_float(tf.reshape(world, [1, -1])).eval())
-        sample_sets.append(tf.to_float(tf.reshape(world_next, [1, -1])).eval())
+      for i in range(5000000):
+        world, world_next = calc_world(size)
 
-      print '... Training'
-      for i in range(samples):
-        #world, world_next = generate_gol_example(size)
-        #world_flat = tf.to_float(tf.reshape(world, [1, -1])).eval()
-        #world_next_flat = tf.to_float(tf.reshape(world_next, [1, -1])).eval()
-
-        world_next_flat = sample_sets.pop()
-        world_flat = sample_sets.pop()
         _, loss_value = sess.run([train, loss], feed_dict={
-            input_world: world_flat, target_world: world_next_flat})
+            input_world: world.reshape(1, size * size),
+            target_world: world_next.reshape(1, size * size)})
 
-        if i % 10 == 0:
+        if i % 300 == 0:
           print '{0} @ Step {1}'.format(loss_value, i)
 
       # 1.) Export as 'Frozen Graph' - using inference model format.
