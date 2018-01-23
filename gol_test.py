@@ -1,6 +1,8 @@
+import argparse
 import numpy as np
-import tensorflow as tf
 import os
+import tensorflow as tf
+
 
 def calc_world_next(world, size):
   world_next = np.zeros_like(world)
@@ -13,12 +15,48 @@ def calc_world_next(world, size):
         world_next[i, j] = world[i, j]
   return world_next
 
+
 def calc_world(size):
   world = np.random.random_integers(0, 1, [size - 2, size -2])
   world = np.lib.pad(world, (1, 1), 'constant')
   return world, calc_world_next(world, size)
 
-def main():
+
+def train_model(size, saver, dir, train, input_world, target_world, loss, sess):
+  for i in range(1000000):
+    world, world_next = calc_world(size)
+
+    _, loss_value = sess.run([train, loss], feed_dict={
+        input_world: world.reshape(1, size * size),
+        target_world: world_next.reshape(1, size * size)})
+
+    if i % 300 == 0:
+      print '{0} @ Step {1}'.format(loss_value, i)
+
+  # 1.) Export as 'Frozen Graph' - using inference model format.
+  tf.train.write_graph(sess.graph_def, '.', 'gol.pbtxt')
+  tf.train.write_graph(sess.graph_def, '.', 'gol.pb', False)
+
+  # 2.) Export as Saved Model (model saver TODO)
+  saver.save(sess, dir + '/gol-data/gol')
+
+
+def infer(size, saver, dir, sess, prediction, input_world):
+  saver.restore(sess, dir + '/gol-data/gol')
+  print 'model restored'
+
+  # Infer a couple of examples:
+  for i in range(5):
+    world, world_next = calc_world(size)
+
+    print 'prediction'
+    print sess.run(prediction, feed_dict={input_world: world.reshape(1, size * size)})
+    print 'world_next'
+    print world_next
+    print '---------------------'
+
+
+def main(train):
   size = 5
   dir = os.path.dirname(os.path.realpath(__file__))
 
@@ -47,22 +85,17 @@ def main():
     with tf.Session() as sess:
       sess.run(tf.global_variables_initializer())
 
-      for i in range(1000000):
-        world, world_next = calc_world(size)
+      if train == True:
+        train_model(size, saver, dir, train, input_world, target_world, loss, sess)
+      else:
+        infer(size, saver, dir, sess, prediction, input_world)
 
-        _, loss_value = sess.run([train, loss], feed_dict={
-            input_world: world.reshape(1, size * size),
-            target_world: world_next.reshape(1, size * size)})
-
-        if i % 300 == 0:
-          print '{0} @ Step {1}'.format(loss_value, i)
-
-      # 1.) Export as 'Frozen Graph' - using inference model format.
-      tf.train.write_graph(sess.graph_def, '.', 'gol.pbtxt')
-      tf.train.write_graph(sess.graph_def, '.', 'gol.pb', False)
-
-      # 2.) Export as Saved Model (model saver TODO)
-      saver.save(sess, dir + '/gol-data/gol')
 
 if __name__ == '__main__':
-  main()
+  parser = argparse.ArgumentParser()
+  parser.add_argument('--train', action='store_true', help='Perform training')
+
+  args = parser.parse_args()
+  print args.train
+  main(args.train)
+
