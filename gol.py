@@ -56,7 +56,7 @@ def infer(size, saver, dir, sess, prediction, input_world):
     print '---------------------'
 
 
-def main(train):
+def main(should_train):
   size = 5
   dir = os.path.dirname(os.path.realpath(__file__))
 
@@ -85,7 +85,7 @@ def main(train):
     with tf.Session() as sess:
       sess.run(tf.global_variables_initializer())
 
-      if train == True:
+      if should_train == True:
         train_model(size, saver, dir, train, input_world, target_world, loss, sess)
       else:
         infer(size, saver, dir, sess, prediction, input_world)
@@ -96,6 +96,5 @@ if __name__ == '__main__':
   parser.add_argument('--train', action='store_true', help='Perform training')
 
   args = parser.parse_args()
-  print args.train
   main(args.train)
 
