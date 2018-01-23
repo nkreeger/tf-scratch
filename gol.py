@@ -42,9 +42,6 @@ def train_model(size, saver, dir, train, input_world, target_world, loss, sess):
 
 
 def infer(size, saver, dir, sess, prediction, input_world):
-  saver.restore(sess, dir + '/gol-data/gol')
-  print 'model restored'
-
   # Infer a couple of examples:
   for i in range(5):
     world, world_next = calc_world(size)
@@ -84,6 +81,9 @@ def main(should_train):
 
     with tf.Session() as sess:
       sess.run(tf.global_variables_initializer())
+
+      saver.restore(sess, dir + '/gol-data/gol')
+      print 'model restored'
 
       if should_train == True:
         train_model(size, saver, dir, train, input_world, target_world, loss, sess)
