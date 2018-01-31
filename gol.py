@@ -22,8 +22,8 @@ def calc_world(size):
   return world, calc_world_next(world, size)
 
 
-def train_model(size, saver, dir, train, input_world, target_world, loss, sess):
-  for i in range(1000000):
+def train_model(size, saver, dir, train, input_world, target_world, prediction, loss, sess):
+  for i in range(1):
     world, world_next = calc_world(size)
 
     _, loss_value = sess.run([train, loss], feed_dict={
@@ -39,6 +39,12 @@ def train_model(size, saver, dir, train, input_world, target_world, loss, sess):
 
   # 2.) Export as Saved Model (model saver TODO)
   saver.save(sess, dir + '/gol-data/gol')
+
+  # 3.) Save as TFLite format
+  print 'prediction {}'.format(prediction)
+  tf.contrib.lite.toco_convert(sess.graph_def,
+                               input_world,
+                               prediction)
 
 
 def infer(size, saver, dir, sess, prediction, input_world):
@@ -86,7 +92,7 @@ def main(should_train):
       print 'model restored'
 
       if should_train == True:
-        train_model(size, saver, dir, train, input_world, target_world, loss, sess)
+        train_model(size, saver, dir, train, input_world, target_world, prediction, loss, sess)
       else:
         infer(size, saver, dir, sess, prediction, input_world)
 
