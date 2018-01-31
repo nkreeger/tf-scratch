@@ -4,6 +4,7 @@ import os
 import tensorflow as tf
 
 # manually put back imported modules
+# https://github.com/tensorflow/tensorflow/issues/15410
 import tempfile
 import subprocess
 tf.contrib.lite.tempfile = tempfile
