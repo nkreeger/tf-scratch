@@ -3,6 +3,11 @@ import numpy as np
 import os
 import tensorflow as tf
 
+# manually put back imported modules
+import tempfile
+import subprocess
+tf.contrib.lite.tempfile = tempfile
+tf.contrib.lite.subprocess = subprocess
 
 def calc_world_next(world, size):
   world_next = np.zeros_like(world)
@@ -42,9 +47,10 @@ def train_model(size, saver, dir, train, input_world, target_world, prediction, 
 
   # 3.) Save as TFLite format
   print 'prediction {}'.format(prediction)
-  tf.contrib.lite.toco_convert(sess.graph_def,
-                               input_world,
-                               prediction)
+  tflite_model = tf.contrib.lite.toco_convert(sess.graph_def,
+                                              [input_world],
+                                              [prediction])
+  open("gol.tflite", "wb").write(tflite_model)
 
 
 def infer(size, saver, dir, sess, prediction, input_world):
